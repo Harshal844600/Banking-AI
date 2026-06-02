@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated.app.index'
 import { Route as ApiAdvisorStreamRouteImport } from './routes/api/advisor/stream'
+import { Route as AuthenticatedAppTransactionsRouteImport } from './routes/_authenticated.app.transactions'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -45,11 +46,18 @@ const ApiAdvisorStreamRoute = ApiAdvisorStreamRouteImport.update({
   path: '/api/advisor/stream',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAppTransactionsRoute =
+  AuthenticatedAppTransactionsRouteImport.update({
+    id: '/app/transactions',
+    path: '/app/transactions',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/app/transactions': typeof AuthenticatedAppTransactionsRoute
   '/api/advisor/stream': typeof ApiAdvisorStreamRoute
   '/app/': typeof AuthenticatedAppIndexRoute
 }
@@ -57,6 +65,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/app/transactions': typeof AuthenticatedAppTransactionsRoute
   '/api/advisor/stream': typeof ApiAdvisorStreamRoute
   '/app': typeof AuthenticatedAppIndexRoute
 }
@@ -66,20 +75,34 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/_authenticated/app/transactions': typeof AuthenticatedAppTransactionsRoute
   '/api/advisor/stream': typeof ApiAdvisorStreamRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/signup' | '/api/advisor/stream' | '/app/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/signup'
+    | '/app/transactions'
+    | '/api/advisor/stream'
+    | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/signup' | '/api/advisor/stream' | '/app'
+  to:
+    | '/'
+    | '/login'
+    | '/signup'
+    | '/app/transactions'
+    | '/api/advisor/stream'
+    | '/app'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/login'
     | '/signup'
+    | '/_authenticated/app/transactions'
     | '/api/advisor/stream'
     | '/_authenticated/app/'
   fileRoutesById: FileRoutesById
@@ -136,14 +159,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdvisorStreamRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/app/transactions': {
+      id: '/_authenticated/app/transactions'
+      path: '/app/transactions'
+      fullPath: '/app/transactions'
+      preLoaderRoute: typeof AuthenticatedAppTransactionsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAppTransactionsRoute: typeof AuthenticatedAppTransactionsRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAppTransactionsRoute: AuthenticatedAppTransactionsRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
 }
 
