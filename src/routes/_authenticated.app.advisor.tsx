@@ -13,7 +13,7 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 const SUGGESTIONS = [
   "Where am I overspending this month?",
-  "How much should I save monthly to hit a $20k buffer?",
+  "How much should I save monthly to hit a ₹20k buffer?",
   "Summarize my financial health in 3 bullets.",
   "Which subscriptions look unusual?",
 ];
@@ -51,12 +51,24 @@ function AdvisorPage() {
         body: JSON.stringify({ messages: next }),
       });
 
-      if (resp.status === 429) { toast.error("Rate limit hit — try again in a moment."); setBusy(false); return; }
-      if (resp.status === 402) { toast.error("AI credits exhausted. Add credits in Workspace settings."); setBusy(false); return; }
-      if (!resp.ok || !resp.body) { toast.error("Advisor unavailable."); setBusy(false); return; }
+      if (resp.status === 429) {
+        toast.error("Rate limit hit — try again in a moment.");
+        setBusy(false);
+        return;
+      }
+      if (resp.status === 402) {
+        toast.error("AI credits exhausted. Add credits in Workspace settings.");
+        setBusy(false);
+        return;
+      }
+      if (!resp.ok || !resp.body) {
+        toast.error("Advisor unavailable.");
+        setBusy(false);
+        return;
+      }
 
       // Insert placeholder assistant message
-      setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -75,13 +87,16 @@ function AdvisorPage() {
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (!line.startsWith("data: ")) continue;
           const json = line.slice(6).trim();
-          if (json === "[DONE]") { done = true; break; }
+          if (json === "[DONE]") {
+            done = true;
+            break;
+          }
           try {
             const parsed = JSON.parse(json);
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
               acc += delta;
-              setMessages(prev => {
+              setMessages((prev) => {
                 const copy = [...prev];
                 copy[copy.length - 1] = { role: "assistant", content: acc };
                 return copy;
@@ -104,7 +119,9 @@ function AdvisorPage() {
     <div className="max-w-4xl mx-auto px-6 md:px-8 py-8 animate-reveal">
       <div className="mb-8">
         <p className="label-eyebrow text-muted-foreground mb-2">Advisor AI</p>
-        <h1 className="font-display text-4xl font-bold tracking-tight">Ask anything about your money.</h1>
+        <h1 className="font-display text-4xl font-bold tracking-tight">
+          Ask anything about your money.
+        </h1>
       </div>
 
       <div className="bg-foreground text-background border border-foreground min-h-[60vh] flex flex-col">
@@ -112,10 +129,11 @@ function AdvisorPage() {
           {messages.length === 0 ? (
             <div className="space-y-6">
               <p className="text-sm text-background/60 leading-relaxed max-w-md">
-                I have access to your last 90 days of transactions. Ask me about spending, saving, affordability, or your financial health.
+                I have access to your last 90 days of transactions. Ask me about spending, saving,
+                affordability, or your financial health.
               </p>
               <div className="grid sm:grid-cols-2 gap-2">
-                {SUGGESTIONS.map(s => (
+                {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
                     onClick={() => send(s)}
@@ -129,11 +147,11 @@ function AdvisorPage() {
           ) : (
             messages.map((m, i) => (
               <div key={i} className={m.role === "user" ? "flex justify-end" : ""}>
-                <div className={`max-w-[85%] p-4 text-sm leading-relaxed whitespace-pre-wrap ${
-                  m.role === "user"
-                    ? "bg-accent text-background"
-                    : "bg-white/10"
-                }`}>
+                <div
+                  className={`max-w-[85%] p-4 text-sm leading-relaxed whitespace-pre-wrap ${
+                    m.role === "user" ? "bg-accent text-background" : "bg-white/10"
+                  }`}
+                >
                   {m.content || <span className="opacity-50 italic">Thinking…</span>}
                 </div>
               </div>
@@ -142,17 +160,24 @@ function AdvisorPage() {
         </div>
 
         <form
-          onSubmit={(e) => { e.preventDefault(); send(input); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            send(input);
+          }}
           className="border-t border-white/10 p-4 flex gap-2"
         >
           <input
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about your finances…"
             disabled={busy}
             className="flex-1 bg-white/5 border border-white/10 px-3 py-2.5 text-sm focus:outline-none focus:border-accent text-background placeholder:text-background/40"
           />
-          <button type="submit" disabled={busy || !input.trim()} className="px-5 py-2 bg-background text-foreground text-xs font-bold tracking-widest disabled:opacity-40">
+          <button
+            type="submit"
+            disabled={busy || !input.trim()}
+            className="px-5 py-2 bg-background text-foreground text-xs font-bold tracking-widest disabled:opacity-40"
+          >
             {busy ? "…" : "SEND"}
           </button>
         </form>

@@ -40,7 +40,13 @@ export type Transaction = {
 export function fmtCurrency(n: number) {
   const sign = n < 0 ? "-" : n > 0 ? "+" : "";
   const abs = Math.abs(n);
-  return `${sign}$${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatted = new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(abs);
+  return `${sign}${formatted}`;
 }
 
 export function fmtDateShort(iso: string) {

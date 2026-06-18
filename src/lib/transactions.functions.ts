@@ -12,6 +12,7 @@ const RowSchema = z.object({
 
 const ImportSchema = z.object({
   rows: z.array(RowSchema).min(1).max(500),
+  statementId: z.string().uuid().optional().nullable(),
 });
 
 const CategoryEnum = z.enum(CATEGORIES);
@@ -25,7 +26,7 @@ export const importTransactions = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ImportSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const apiKey = process.env.LOVABLE_API_KEY;
+    const geminiApiKey = process.env.GEMINI_API_KEY;
 
     // Build categorization request
     const items = data.rows.map((r, i) => ({
@@ -35,71 +36,61 @@ export const importTransactions = createServerFn({ method: "POST" })
       amount: r.amount,
     }));
 
-    let categories: string[] = data.rows.map(r =>
-      r.amount > 0 ? "income" : "other",
-    );
+    const categories: string[] = data.rows.map((r) => (r.amount > 0 ? "income" : "other"));
 
-    if (apiKey) {
+    if (geminiApiKey) {
       try {
-        const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+
+        const systemPrompt = "You categorize bank transactions. Return strictly a JSON object containing a 'results' array with objects having 'i' (integer index) and 'category' (string) fields. Valid categories are: " + CATEGORIES.join(", ");
+
+        const response = await fetch(geminiUrl, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You categorize bank transactions. Return strictly the JSON tool call. Categories: " +
-                  CATEGORIES.join(", "),
-              },
+            contents: [
               {
                 role: "user",
-                content:
-                  "Categorize each transaction. Items: " + JSON.stringify(items),
+                parts: [{ text: "Categorize these transactions:\n" + JSON.stringify(items) }],
               },
             ],
-            tools: [
-              {
-                type: "function",
-                function: {
-                  name: "categorize",
-                  description: "Return category for each transaction index",
-                  parameters: {
-                    type: "object",
-                    properties: {
-                      results: {
-                        type: "array",
-                        items: {
-                          type: "object",
-                          properties: {
-                            i: { type: "number" },
-                            category: { type: "string", enum: [...CATEGORIES] },
-                          },
-                          required: ["i", "category"],
-                          additionalProperties: false,
+            systemInstruction: {
+              parts: [{ text: systemPrompt }],
+            },
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "OBJECT",
+                properties: {
+                  results: {
+                    type: "ARRAY",
+                    items: {
+                      type: "OBJECT",
+                      properties: {
+                        i: { type: "INTEGER" },
+                        category: {
+                          type: "STRING",
+                          enum: [...CATEGORIES],
                         },
                       },
+                      required: ["i", "category"],
                     },
-                    required: ["results"],
-                    additionalProperties: false,
                   },
                 },
+                required: ["results"],
               },
-            ],
-            tool_choice: { type: "function", function: { name: "categorize" } },
+            },
           }),
         });
 
-        if (resp.ok) {
-          const json = await resp.json();
-          const call = json.choices?.[0]?.message?.tool_calls?.[0];
-          if (call?.function?.arguments) {
-            const args = JSON.parse(call.function.arguments);
-            for (const r of args.results ?? []) {
+        if (response.ok) {
+          const json = await response.json();
+          const responseText = json.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (responseText) {
+            const parsedData = JSON.parse(responseText);
+            for (const r of parsedData.results ?? []) {
               const parsed = CategoryEnum.safeParse(r.category);
               if (parsed.success && typeof r.i === "number" && r.i < categories.length) {
                 categories[r.i] = parsed.data;
@@ -107,10 +98,10 @@ export const importTransactions = createServerFn({ method: "POST" })
             }
           }
         } else {
-          console.error("AI categorize failed:", resp.status, await resp.text());
+          console.error("Gemini categorize failed:", response.status, await response.text());
         }
       } catch (e) {
-        console.error("AI categorize threw:", e);
+        console.error("Gemini categorize threw:", e);
       }
     }
 
@@ -121,6 +112,7 @@ export const importTransactions = createServerFn({ method: "POST" })
       merchant: r.merchant ?? null,
       amount: r.amount,
       category: categories[i] as (typeof CATEGORIES)[number],
+      statement_id: data.statementId ?? null,
     }));
 
     const { error, count } = await supabase

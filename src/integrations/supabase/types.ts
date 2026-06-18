@@ -1,10 +1,4 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
@@ -12,8 +6,57 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      budgets: {
+        Row: {
+          category: Database["public"]["Enums"]["txn_category"]
+          created_at: string
+          id: string
+          limit_amount: number
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["txn_category"]
+          created_at?: string
+          id?: string
+          limit_amount: number
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["txn_category"]
+          created_at?: string
+          id?: string
+          limit_amount?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -32,6 +75,33 @@ export type Database = {
         }
         Relationships: []
       }
+      statements: {
+        Row: {
+          created_at: string
+          file_path: string
+          filename: string
+          id: string
+          row_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          filename: string
+          id?: string
+          row_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          filename?: string
+          id?: string
+          row_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
@@ -40,6 +110,7 @@ export type Database = {
           description: string
           id: string
           merchant: string | null
+          statement_id: string | null
           txn_date: string
           user_id: string
         }
@@ -50,6 +121,7 @@ export type Database = {
           description: string
           id?: string
           merchant?: string | null
+          statement_id?: string | null
           txn_date: string
           user_id: string
         }
@@ -60,8 +132,35 @@ export type Database = {
           description?: string
           id?: string
           merchant?: string | null
+          statement_id?: string | null
           txn_date?: string
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_statement_id_fkey"
+            columns: ["statement_id"]
+            isOneToOne: false
+            referencedRelation: "statements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      "User data": {
+        Row: {
+          email: string
+          id: number
+          password: string | null
+        }
+        Insert: {
+          email: string
+          id?: number
+          password?: string | null
+        }
+        Update: {
+          email?: string
+          id?: number
+          password?: string | null
         }
         Relationships: []
       }
@@ -209,6 +308,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       txn_category: [
@@ -225,4 +327,4 @@ export const Constants = {
       ],
     },
   },
-} as const
+} as const;

@@ -51,10 +51,10 @@
   --radius: 0px;
 
   /* Architectural Swiss palette */
-  --ink: oklch(0.145 0 0);          /* #0A0A0A near-black */
-  --paper: oklch(1 0 0);            /* white */
-  --stone: oklch(0.965 0 0);        /* #F4F4F5 */
-  --brand: oklch(0.546 0.215 262);  /* #2563EB blue */
+  --ink: oklch(0.145 0 0); /* #0A0A0A near-black */
+  --paper: oklch(1 0 0); /* white */
+  --stone: oklch(0.965 0 0); /* #F4F4F5 */
+  --brand: oklch(0.546 0.215 262); /* #2563EB blue */
 
   --background: var(--paper);
   --foreground: var(--ink);
@@ -106,17 +106,23 @@
   * {
     border-color: var(--color-border);
   }
-  html, body {
+  html,
+  body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4 {
+  h1,
+  h2,
+  h3,
+  h4 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }
-  .font-display { font-family: var(--font-display); }
+  .font-display {
+    font-family: var(--font-display);
+  }
   .label-eyebrow {
     font-size: 10px;
     font-weight: 700;
@@ -126,7 +132,45 @@
 }
 
 @keyframes reveal-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.animate-reveal { animation: reveal-up 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-reveal {
+  animation: reveal-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes float-slow {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+.animate-float {
+  animation: float-slow 4s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.12);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(37, 99, 235, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+  }
+}
+.animate-pulse-soft {
+  animation: pulse-soft 2.6s ease-out infinite;
+}

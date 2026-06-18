@@ -12,30 +12,42 @@ export type HealthBreakdown = {
 
 export function computeHealthScore(txns: Transaction[]): HealthBreakdown {
   if (!txns.length) {
-    return { total: 0, savings: 0, stability: 0, balance: 0, positivity: 0, income: 0, expenses: 0 };
+    return {
+      total: 0,
+      savings: 0,
+      stability: 0,
+      balance: 0,
+      positivity: 0,
+      income: 0,
+      expenses: 0,
+    };
   }
-  const income = txns.filter(t => t.amount > 0).reduce((s, t) => s + Number(t.amount), 0);
-  const expenses = Math.abs(txns.filter(t => t.amount < 0).reduce((s, t) => s + Number(t.amount), 0));
+  const income = txns.filter((t) => t.amount > 0).reduce((s, t) => s + Number(t.amount), 0);
+  const expenses = Math.abs(
+    txns.filter((t) => t.amount < 0).reduce((s, t) => s + Number(t.amount), 0),
+  );
 
   // 40 pts: savings ratio
   const savingsRatio = income > 0 ? (income - expenses) / income : 0;
   const savings = Math.max(0, Math.min(40, savingsRatio * 100 * 0.8));
 
   // 20 pts: stability (lower stdev of weekly expense = better)
-  const weekly = bucketByWeek(txns.filter(t => t.amount < 0).map(t => ({ d: t.txn_date, v: Math.abs(Number(t.amount)) })));
+  const weekly = bucketByWeek(
+    txns.filter((t) => t.amount < 0).map((t) => ({ d: t.txn_date, v: Math.abs(Number(t.amount)) })),
+  );
   const stability = 20 * (1 - clamp(cv(weekly), 0, 1));
 
   // 20 pts: category balance — discretionary share penalty
   const discretionary: Category[] = ["entertainment", "shopping", "travel"];
   const discSum = txns
-    .filter(t => t.amount < 0 && discretionary.includes(t.category))
+    .filter((t) => t.amount < 0 && discretionary.includes(t.category))
     .reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
   const discShare = expenses > 0 ? discSum / expenses : 0;
   const balance = 20 * (1 - clamp(discShare * 1.5, 0, 1));
 
   // 20 pts: positive months ratio
   const months = bucketByMonth(txns);
-  const positiveMonths = Object.values(months).filter(net => net >= 0).length;
+  const positiveMonths = Object.values(months).filter((net) => net >= 0).length;
   const positivity = Object.keys(months).length
     ? 20 * (positiveMonths / Object.keys(months).length)
     : 0;
@@ -60,7 +72,9 @@ export function scoreLabel(score: number): string {
   return "Critical";
 }
 
-function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
+function clamp(v: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, v));
+}
 
 function cv(values: number[]) {
   if (values.length < 2) return 0;
@@ -113,7 +127,7 @@ export function monthlyCashflow(txns: Transaction[]) {
     else exp[key] = (exp[key] ?? 0) + Math.abs(Number(t.amount));
   }
   const keys = Array.from(new Set([...Object.keys(inc), ...Object.keys(exp)])).sort();
-  return keys.slice(-6).map(k => ({
+  return keys.slice(-6).map((k) => ({
     month: new Date(k + "-01").toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
     income: Math.round(inc[k] ?? 0),
     expense: Math.round(exp[k] ?? 0),
